@@ -117,8 +117,9 @@ func (f *Fragmentation) Process(id uint32, first, last uint16, more bool, vv buf
 	if f.size > f.highLimit {
 		tail := f.rList.Back()
 		for f.size > f.lowLimit && tail != nil {
+			prev := tail.Prev()
 			f.release(tail)
-			tail = tail.Prev()
+			tail = prev
 		}
 	}
 	f.mu.Unlock()

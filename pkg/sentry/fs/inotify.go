@@ -143,7 +143,8 @@ func (i *Inotify) Read(ctx context.Context, _ *File, dst usermem.IOSequence, _ i
 	}
 
 	var writeLen int64
-	for event := i.events.Front(); event != nil; event = event.Next() {
+	event := i.events.Front()
+	for event != nil {
 		// Does the buffer have enough remaining space to hold the event we're
 		// about to write out?
 		if dst.NumBytes() < int64(event.sizeOf()) {
@@ -158,6 +159,7 @@ func (i *Inotify) Read(ctx context.Context, _ *File, dst usermem.IOSequence, _ i
 		// Linux always dequeues an available event as long as there's enough
 		// buffer space to copy it out, even if the copy below fails. Emulate
 		// this behaviour.
+		next := event.Next()
 		i.events.Remove(event)
 
 		// Buffer has enough space, copy event to the read buffer.
@@ -165,6 +167,7 @@ func (i *Inotify) Read(ctx context.Context, _ *File, dst usermem.IOSequence, _ i
 		if err != nil {
 			return 0, err
 		}
+		event = next
 
 		writeLen += n
 		dst = dst.DropFirst64(n)
