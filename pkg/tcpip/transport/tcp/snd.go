@@ -46,6 +46,9 @@ const (
 	// before timing out the connection.
 	// Linux default TCP_RETR2, net.ipv4.tcp_retries2.
 	MaxRetries = 15
+
+	// maxInt is the largest representable value of type int.
+	maxInt = int(^uint(0) >> 1)
 )
 
 // congestionControl is an interface that must be implemented by any supported
@@ -316,7 +319,7 @@ func newSender(ep *endpoint, iss, irs seqnum.Value, sndWnd seqnum.Size, mss uint
 // their initial values.
 func (s *sender) initCongestionControl(congestionControlName tcpip.CongestionControlOption) congestionControl {
 	s.sndCwnd = InitialCwnd
-	s.sndSsthresh = math.MaxInt64
+	s.sndSsthresh = maxInt
 
 	switch congestionControlName {
 	case ccCubic:
