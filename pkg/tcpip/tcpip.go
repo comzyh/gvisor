@@ -39,6 +39,7 @@ import (
 	"strings"
 	"sync/atomic"
 	"time"
+	"unsafe"
 
 	"gvisor.dev/gvisor/pkg/sync"
 	"gvisor.dev/gvisor/pkg/waiter"
@@ -1339,7 +1340,16 @@ type NetworkProtocolNumber uint32
 
 // A StatCounter keeps track of a statistic.
 type StatCounter struct {
-	count uint64
+	count [15]byte // instead of "count uint64"
+}
+
+// Reference code:
+// https://go101.org/article/memory-layout.html
+func (s *StatCounter) xAddr() *uint64 {
+	// The return must be 8-byte aligned.
+	return (*uint64)(unsafe.Pointer(
+		uintptr(unsafe.Pointer(&s.count)) + 8 -
+			uintptr(unsafe.Pointer(&s.count))%8))
 }
 
 // Increment adds one to the counter.
@@ -1354,12 +1364,12 @@ func (s *StatCounter) Decrement() {
 
 // Value returns the current value of the counter.
 func (s *StatCounter) Value() uint64 {
-	return atomic.LoadUint64(&s.count)
+	return atomic.LoadUint64(s.xAddr())
 }
 
 // IncrementBy increments the counter by v.
 func (s *StatCounter) IncrementBy(v uint64) {
-	atomic.AddUint64(&s.count, v)
+	atomic.AddUint64(s.xAddr(), v)
 }
 
 func (s *StatCounter) String() string {
